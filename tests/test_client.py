@@ -30,7 +30,7 @@ import unittest
 import warnings
 import weakref
 from tempfile import mkstemp
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 from pytest_relaxed import raises
@@ -123,6 +123,8 @@ class ClientTest(unittest.TestCase):
         )
         self.event = threading.Event()
         self.kill_event = threading.Event()
+        host_key = paramiko.RSAKey.from_private_key_file(_support("rsa.key"))
+        self.public_host_key = paramiko.RSAKey(data=host_key.asbytes())
 
     def tearDown(self):
         # Shut down client Transport
@@ -189,8 +191,6 @@ class ClientTest(unittest.TestCase):
             run_kwargs[key] = kwargs.pop(key, None)
         # Server setup
         threading.Thread(target=self._run, kwargs=run_kwargs).start()
-        host_key = paramiko.RSAKey.from_private_key_file(_support("rsa.key"))
-        public_host_key = paramiko.RSAKey(data=host_key.asbytes())
 
         # Client setup
         self.tc = SSHClient()
@@ -202,7 +202,7 @@ class ClientTest(unittest.TestCase):
             # TODO: but q is, is part of our pipeline still conflating keytype
             # with signature algorithm? seems likely?
             "ssh-rsa",
-            public_host_key,
+            self.public_host_key,
         )
 
         # Actual connection
@@ -674,47 +674,28 @@ class SSHClientTest(ClientTest):
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy)
         assert isinstance(client._policy, paramiko.AutoAddPolicy)
 
-    @patch("paramiko.client.Transport")
-    def test_disabled_algorithms_defaults_to_None(self, Transport):
-        SSHClient().connect("host", sock=Mock(), password="no")
-        assert Transport.call_args[1]["disabled_algorithms"] is None
+    def test_disabled_algorithms_defaults_to_None(self):
+        self._test_connection(password="pygmalion")
+        assert self.tc._transport.disabled_algorithms == {}
 
-    @patch("paramiko.client.Transport")
-    def test_disabled_algorithms_passed_directly_if_given(self, Transport):
-        SSHClient().connect(
-            "host",
-            sock=Mock(),
-            password="no",
-            disabled_algorithms={"keys": ["ed25519"]},
+    def test_disabled_algorithms_passed_directly_if_given(self):
+        self._test_connection(
+            password="pygmalion", disabled_algorithms={"keys": ["ed25519"]}
         )
-        call_arg = Transport.call_args[1]["disabled_algorithms"]
-        assert call_arg == {"keys": ["ed25519"]}
+        assert self.tc._transport.disabled_algorithms == {"keys": ["ed25519"]}
 
-    @patch("paramiko.client.Transport")
-    def test_transport_factory_defaults_to_Transport(self, Transport):
-        sock, algos = Mock(), Mock()
-        SSHClient().connect(
-            "host",
-            sock=sock,
-            password="no",
-            disabled_algorithms=algos,
-        )
-        Transport.assert_called_once_with(sock, disabled_algorithms=algos)
+    def test_transport_factory_defaults_to_Transport(self):
+        self._test_connection(password="pygmalion")
+        assert isinstance(self.tc._transport, paramiko.Transport)
 
-    @patch("paramiko.client.Transport")
-    def test_transport_factory_may_be_specified(self, Transport):
-        factory = Mock()
-        sock, algos = Mock(), Mock()
-        SSHClient().connect(
-            "host",
-            sock=sock,
-            password="no",
-            disabled_algorithms=algos,
-            transport_factory=factory,
+    def test_transport_factory_may_be_specified(self):
+        class MyTransport(paramiko.Transport):
+            pass
+
+        self._test_connection(
+            password="pygmalion", transport_factory=MyTransport
         )
-        factory.assert_called_once_with(sock, disabled_algorithms=algos)
-        # Safety check
-        assert not Transport.called
+        assert isinstance(self.tc._transport, MyTransport)
 
 
 class PasswordPassphraseTests(ClientTest):
