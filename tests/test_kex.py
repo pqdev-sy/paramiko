@@ -153,7 +153,7 @@ class KexTest(unittest.TestCase):
         transport.server_mode = False
         kex = KexGexSHA256(transport)
         kex.start_kex()
-        x = b"22000004000000080000002000"
+        x = b"22000008000000080000002000"
         self.assertEqual(x, hexlify(transport._message.asbytes()).upper())
         self.assertEqual(
             (paramiko.kex_gex._MSG_KEXDH_GEX_GROUP,), transport._expect
@@ -176,7 +176,7 @@ class KexTest(unittest.TestCase):
         msg.add_string("fake-sig")
         msg.rewind()
         kex.parse_next(paramiko.kex_gex._MSG_KEXDH_GEX_REPLY, msg)
-        H = b"AD1A9365A67B4496F05594AD1BF656E3CDA0851289A4C1AFF549FEAE50896DF4"
+        H = b"968D1B16D8A8B701334FDAC6E0C8BABC2E16016DB333BA1B72E07E79515A1F64"
         self.assertEqual(self.K, transport._K)
         self.assertEqual(H, hexlify(transport._H).upper())
         self.assertEqual((b"fake-host-key", b"fake-sig"), transport._verify)

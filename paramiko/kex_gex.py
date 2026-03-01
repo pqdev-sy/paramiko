@@ -49,7 +49,7 @@ from paramiko.ssh_exception import SSHException
 
 class KexGexSHA256:
     name = "diffie-hellman-group-exchange-sha256"
-    min_bits = 1024
+    min_bits = 2048
     max_bits = 8192
     preferred_bits = 2048
     hash_algo = sha256
@@ -71,8 +71,7 @@ class KexGexSHA256:
             )
             return
         # request a bit range: we accept (min_bits) to (max_bits), but prefer
-        # (preferred_bits).  according to the spec, we shouldn't pull the
-        # minimum up above 1024.
+        # (preferred_bits).
         m = Message()
         if _test_old_style:
             # only used for unit tests: we shouldn't ever send this

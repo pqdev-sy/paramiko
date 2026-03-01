@@ -2,6 +2,16 @@
 Changelog
 =========
 
+- :support:`-` Raised the minimum modulus size in
+  ``diffie-hellman-group-exchange-sha256`` key exchange from 1024 (the original
+  spec's minimum) to 2048 (the contemporary minimum according to :rfc:`9142`,
+  and matching a similar change by OpenSSH ten years ago in 7.2 / 2016).
+
+  .. warning::
+    This change may be backwards incompatible if you were targeting servers
+    supporting *only* this kex method and whose own maximum modulus size for
+    group-exchange was lower than 2048.
+
 - :support:`-` Removed GSSAPI support, as the current (buggy, no longer easily
   testable in CI, poorly understood and not used by the core team)
   implementation is SHA-1 based and no SHA-256 upgrade appeared to be
