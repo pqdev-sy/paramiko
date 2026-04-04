@@ -3,6 +3,12 @@ Changelog
 =========
 
 - :release:`5.0.0 <2026-03-30>`
+- :bug:`- major` Fix `Ed25519Key <paramiko.ed25519key.Ed25519Key>`'s internals
+  such that it no longer throws `AttributeError` during calls to ``__repr__``
+  when only partly initialized. This isn't a normal runtime problem (it only
+  happens inside error handling for fatal errors like "not a valid private
+  key") but was perennially complicating test failure diagnosis and similar
+  scenarios.
 - :support:`-` The `PKey <paramiko.pkey.PKey>` class family tree reorganized
   the ``write_private_key`` and ``write_private_key_file`` methods; with other
   recent changes, having individual implementations on the child classes made

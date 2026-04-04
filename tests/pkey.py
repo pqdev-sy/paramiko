@@ -1,3 +1,4 @@
+from io import StringIO
 from pathlib import Path
 from unittest.mock import call, patch
 
@@ -18,6 +19,7 @@ from paramiko import (
     UnknownKeyType,
 )
 from paramiko.pkey import OPENSSH, PEM, PrivateKey
+from paramiko.ssh_exception import SSHException
 
 from ._util import _support
 
@@ -281,3 +283,29 @@ class PKey_:
                 assert f"BEGIN {key_name} PRIVATE KEY" in temp_key.read_text()
             elif key_format is OPENSSH:
                 assert "BEGIN OPENSSH PRIVATE KEY" in temp_key.read_text()
+
+
+class Ed25519Key_:
+    def has_non_excepting_repr_during_load_errors(self) -> None:
+        """
+        Inside baseball: don't throw scary looking AttributeErrors inside
+        repr() shown during other errors (eg "normal" load errors due to common
+        case of trying an unknown key input as each possible type).
+
+        Most PKey subclasses don't have this particular problem, Ed25519Key
+        does due to its original implementation where key material attributes
+        had no default assignment.
+        """
+        with raises(
+            SSHException, match="not a valid OPENSSH private key file"
+        ) as info:
+            Ed25519Key(file_obj=StringIO("ohai! I have lines. Technically."))
+        # When bug under test is not fixed, this will blow up with
+        # AttributeErrors about _signing_key/_verifying_key (as they won't have
+        # been assigned).
+        # When fixed, we get a normal looking repr (albeit whose fingerprint
+        # will effectively be that of an 'empty' key bytes)
+        assert (
+            repr(info.traceback[1].locals["self"])
+            == "PKey(alg=ED25519, bits=256, fp=SHA256:UsIasxMWEd9VFEwjARWWtGJ08DgHp1eib3gSBLed54U)"
+        )
