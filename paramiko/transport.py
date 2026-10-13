@@ -176,10 +176,6 @@ class Transport(threading.Thread, ClosingContextManager):
         "aes128-ctr",
         "aes192-ctr",
         "aes256-ctr",
-        "aes128-cbc",
-        "aes192-cbc",
-        "aes256-cbc",
-        "3des-cbc",
         "aes128-gcm@openssh.com",
         "aes256-gcm@openssh.com",
     )
@@ -188,10 +184,6 @@ class Transport(threading.Thread, ClosingContextManager):
         "hmac-sha2-512",
         "hmac-sha2-256-etm@openssh.com",
         "hmac-sha2-512-etm@openssh.com",
-        "hmac-sha1",
-        "hmac-md5",
-        "hmac-sha1-96",
-        "hmac-md5-96",
     )
     # ~= HostKeyAlgorithms in OpenSSH land
     _preferred_keys = (
